@@ -1,0 +1,44 @@
+pipeline {
+    agent {
+        node {
+            label 'built-in'
+            customWorkspace '/mnt/jenkins'
+        }
+    }
+    tools {
+        maven 'mvn-3.8.6'
+    }
+    
+    stages {
+        stage ('build') {
+            steps {
+                sh' sudo rm -rf * '
+                sh 'sudo git clone https://github.com/Shantanumajan6/project.git'
+                sh' sudo chmod -R 777 /mnt'
+                dir('/mnt/jenkins/project') {
+                sh 'sudo mvn clean package'
+                }
+            }
+        }
+        stage ('deploy on tomcat servers') {
+            steps {
+                sh 'sudo chmod -R 777 /mnt'
+                sh 'scp /mnt/jenkins/project/target/LoginWebApp.war swapnil@172.31.40.195:/mnt/server/apache-tomcat-9.0.69/webapps'
+            }
+        }
+        stage ('start tomcat servers') {
+            agent {
+                node {
+                    label 'node-1'
+                    customWorkspace '/mnt/jenkind_slave'
+                }
+            }
+            steps {
+                dir('/mnt/server/apache-tomcat-9.0.69/bin') {
+                    sh './startup.sh'
+                }
+            }
+        }
+    }
+}
+
